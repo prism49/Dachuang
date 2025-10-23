@@ -30,6 +30,26 @@ const router = createRouter({
       path: '/about',
       name: 'about',
       component: () => import('../views/AboutView.vue')
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../views/LoginView.vue')
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('../views/RegisterView.vue')
+    },
+    {
+      path: '/culture-test',
+      name: 'culture-test',
+      component: () => import('../views/CultureTestView.vue')
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue')
     }
   ]
 })
