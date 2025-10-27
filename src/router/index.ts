@@ -50,6 +50,11 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: () => import('../views/ProfileView.vue')
+    },
+    {
+      path: '/art-gallery', // 新页面的路径
+      name: 'art-gallery', // 新页面的名字
+      component: () => import('../views/ArtGalleryView.vue') // 懒加载新页面组件
     }
   ]
 })
