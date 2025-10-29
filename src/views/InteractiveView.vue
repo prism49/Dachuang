@@ -89,6 +89,7 @@ const getOptionClass = (index: number, quiz: DailyQuizResponse | null) => { // �
   if (index === correctIdx) {
     return 'correct'
   }
+  // (!!! 修复: 确保 selectedOptionIndex.value 存在 !!!)
   if (selectedOptionIndex.value !== null && index === selectedOptionIndex.value && !quiz.wasCorrect) {
     return 'incorrect'
   }

@@ -1,12 +1,9 @@
-// 文件路径: src/stores/authStore.ts
-
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 
 // --- 1. 类型定义 ---
-
 export interface User { id: number; username: string; points: number; lastCheckIn: string | null; }
 export interface QuizQuestion { id: number; question_text: string; options: string[]; correct_answer?: number; analysis?: string; }
 export interface DailyQuizResponse { hasAnswered: boolean; wasCorrect?: boolean; question: QuizQuestion; }
@@ -16,8 +13,7 @@ export interface TestStats { [key: string]: number; }
 export interface Activity { id: string | number; type: string; date: string; points: string; correct?: boolean; question?: string; timestamp: number; }
 
 // --- 2. API URL 定义 ---
-// (!!! 注意：确保这里的 URL 是你 Render 后端的地址 !!!)
-const API_BASE_URL = 'https://dachuang-backend.onrender.com' 
+const API_BASE_URL = 'https://dachuang-backend.onrender.com' // 确保这是你的 Render URL
 
 const AUTH_API_URL = `${API_BASE_URL}/api/auth`
 const USER_API_URL = `${API_BASE_URL}/api/user`
@@ -29,25 +25,19 @@ export const useAuthStore = defineStore('auth', () => {
   // --- State (状态) ---
   const user = ref<User | null>(JSON.parse(localStorage.getItem('user') || 'null'))
   const token = ref<string | null>(localStorage.getItem('token'))
-  const router = useRouter() // 必须在 setup 作用域内调用
-
+  const router = useRouter()
   const dailyQuiz = ref<DailyQuizResponse | null>(null)
   const quizLoading = ref(false)
-
   const testQuestions = ref<TestQuestion[]>([])
   const initialTestResult = localStorage.getItem('testResult');
   const testResult = ref<TestResult | null>(initialTestResult ? JSON.parse(initialTestResult) : null)
   const testLoading = ref(false)
-
   const testStats = ref<TestStats | null>(null)
   const testStatsTotal = ref<number>(0)
-
   const recentActivities = ref<Activity[]>([])
   const activitiesLoading = ref(false)
-
-  const monthlyCheckIns = ref<string[]>([]) // 存储 ["YYYY-MM-DD", ...]
+  const monthlyCheckIns = ref<string[]>([])
   const checkInsLoading = ref(false)
-
 
   // --- Getters ---
   const isLoggedIn = computed(() => !!token.value && !!user.value)
@@ -73,7 +63,6 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = userData;
       localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(userData));
-      // 登录后获取结果和活动记录 (并行)
       await Promise.all([
           fetchTestResult(),
           fetchRecentActivities()
@@ -81,7 +70,6 @@ export const useAuthStore = defineStore('auth', () => {
       return true;
     } catch (error: any) {
       console.error('登录失败:', error.response?.data?.message || error.message);
-      // 确保登录失败时也清理状态
       logout(); 
       return false;
     }
@@ -116,11 +104,10 @@ export const useAuthStore = defineStore('auth', () => {
         user.value.lastCheckIn = lastCheckIn;
         localStorage.setItem('user', JSON.stringify(user.value));
       }
-      // 签到成功后，刷新活动记录 和 当月签到记录
       const today = new Date();
       await Promise.all([
           fetchRecentActivities(),
-          fetchMonthlyCheckIns(today.getFullYear(), today.getMonth() + 1) // 月份是 1-12
+          fetchMonthlyCheckIns(today.getFullYear(), today.getMonth() + 1)
       ]);
       return { success: true, message: res.data.message };
     } catch (error: any) {
@@ -159,7 +146,7 @@ export const useAuthStore = defineStore('auth', () => {
             dailyQuiz.value.question.correct_answer = updatedQuizRes.data.question.correct_answer;
         }
       }
-      await fetchRecentActivities(); // 答题成功后刷新
+      await fetchRecentActivities();
       return { correct, analysis };
     } catch (error: any) {
       console.error('提交答案失败:', error.response?.data?.message || error.message);
