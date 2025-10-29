@@ -58,10 +58,10 @@ const recommendedBook = {
        </div>
     </section>
 
-    <section class="daily-quote-section">
+<section class="daily-quote-section">
       <div class="quote-content">
-        <p class="quote-text">“{{ todayQuote.text }}”</p>
-        <p class="quote-author">— {{ todayQuote.author }}</p>
+        <p class="quote-text">“{{ todayQuote?.text }}”</p>
+        <p class="quote-author">— {{ todayQuote?.author }}</p>
       </div>
     </section>
 

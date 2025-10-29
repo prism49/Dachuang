@@ -124,7 +124,7 @@ const getOptionClass = (index: number, quiz: DailyQuizResponse) => {
   if (!quiz.hasAnswered) {
     return selectedOptionIndex.value === index ? 'selected' : ''
   }
-  const correctIdx = quiz.question.correct_answer
+  const correctIdx = quiz.question.correct_answer ?? -1;
   if (index === correctIdx) {
     return 'correct'
   }

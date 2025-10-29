@@ -6,13 +6,13 @@ import axios from 'axios'
 import { useRouter } from 'vue-router'
 
 // --- 1. 类型定义 ---
-interface User { id: number; username: string; points: number; lastCheckIn: string | null; }
-interface QuizQuestion { id: number; question_text: string; options: string[]; correct_answer?: number; analysis?: string; }
-interface DailyQuizResponse { hasAnswered: boolean; wasCorrect?: boolean; question: QuizQuestion; }
-interface TestQuestion { id: number; text: string; }
-interface TestResult { h_score: number; r_score: number; result_type: string; title: string; analysis: string; }
-interface TestStats { [key: string]: number; }
-interface Activity { id: string | number; type: string; date: string; points: string; correct?: boolean; question?: string; timestamp: number; }
+export interface User { id: number; username: string; points: number; lastCheckIn: string | null; }
+export interface QuizQuestion { id: number; question_text: string; options: string[]; correct_answer?: number; analysis?: string; }
+export interface DailyQuizResponse { hasAnswered: boolean; wasCorrect?: boolean; question: QuizQuestion; }
+export interface TestQuestion { id: number; text: string; }
+export interface TestResult { h_score: number; r_score: number; result_type: string; title: string; analysis: string; }
+export interface TestStats { [key: string]: number; }
+export interface Activity { id: string | number; type: string; date: string; points: string; correct?: boolean; question?: string; timestamp: number; }
 
 const API_BASE_URL = 'https://dachuang-backend.onrender.com' 
 
