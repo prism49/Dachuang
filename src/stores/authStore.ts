@@ -6,6 +6,7 @@ import axios from 'axios'
 import { useRouter } from 'vue-router'
 
 // --- 1. 类型定义 ---
+
 export interface User { id: number; username: string; points: number; lastCheckIn: string | null; }
 export interface QuizQuestion { id: number; question_text: string; options: string[]; correct_answer?: number; analysis?: string; }
 export interface DailyQuizResponse { hasAnswered: boolean; wasCorrect?: boolean; question: QuizQuestion; }
@@ -14,6 +15,8 @@ export interface TestResult { h_score: number; r_score: number; result_type: str
 export interface TestStats { [key: string]: number; }
 export interface Activity { id: string | number; type: string; date: string; points: string; correct?: boolean; question?: string; timestamp: number; }
 
+// --- 2. API URL 定义 ---
+// (!!! 注意：确保这里的 URL 是你 Render 后端的地址 !!!)
 const API_BASE_URL = 'https://dachuang-backend.onrender.com' 
 
 const AUTH_API_URL = `${API_BASE_URL}/api/auth`
@@ -26,7 +29,7 @@ export const useAuthStore = defineStore('auth', () => {
   // --- State (状态) ---
   const user = ref<User | null>(JSON.parse(localStorage.getItem('user') || 'null'))
   const token = ref<string | null>(localStorage.getItem('token'))
-  const router = useRouter()
+  const router = useRouter() // 必须在 setup 作用域内调用
 
   const dailyQuiz = ref<DailyQuizResponse | null>(null)
   const quizLoading = ref(false)
@@ -42,7 +45,6 @@ export const useAuthStore = defineStore('auth', () => {
   const recentActivities = ref<Activity[]>([])
   const activitiesLoading = ref(false)
 
-  // (!!! 新增状态 !!!)
   const monthlyCheckIns = ref<string[]>([]) // 存储 ["YYYY-MM-DD", ...]
   const checkInsLoading = ref(false)
 
@@ -79,6 +81,8 @@ export const useAuthStore = defineStore('auth', () => {
       return true;
     } catch (error: any) {
       console.error('登录失败:', error.response?.data?.message || error.message);
+      // 确保登录失败时也清理状态
+      logout(); 
       return false;
     }
   }
@@ -93,8 +97,8 @@ export const useAuthStore = defineStore('auth', () => {
     testStatsTotal.value = 0;
     recentActivities.value = [];
     activitiesLoading.value = false;
-    monthlyCheckIns.value = []; // <-- 清空签到记录
-    checkInsLoading.value = false; // <-- 清空签到记录
+    monthlyCheckIns.value = [];
+    checkInsLoading.value = false;
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('testResult');
@@ -106,20 +110,18 @@ export const useAuthStore = defineStore('auth', () => {
     if (!token.value) return { success: false, message: '请先登录' };
     try {
       const res = await axios.post<{ points: number; lastCheckIn: string; message: string }>(`${USER_API_URL}/checkin`, {}, authHeader.value);
-      const { points, lastCheckIn } = res.data; // lastCheckIn 是 todayString
+      const { points, lastCheckIn } = res.data;
       if (user.value) {
         user.value.points = points;
         user.value.lastCheckIn = lastCheckIn;
         localStorage.setItem('user', JSON.stringify(user.value));
       }
-      
-      // (!!! 更新 !!!) 签到成功后，刷新活动记录 和 当月签到记录
+      // 签到成功后，刷新活动记录 和 当月签到记录
       const today = new Date();
       await Promise.all([
           fetchRecentActivities(),
           fetchMonthlyCheckIns(today.getFullYear(), today.getMonth() + 1) // 月份是 1-12
       ]);
-      
       return { success: true, message: res.data.message };
     } catch (error: any) {
       return { success: false, message: error.response?.data?.message || '签到失败' };
@@ -179,33 +181,26 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchTestResult(): Promise<void> {
-    // console.log("[authStore] fetchTestResult function called.");
-    if (!isLoggedIn.value) { /*console.log("[authStore] fetchTestResult: Not logged in, exiting.");*/ return; }
+    if (!isLoggedIn.value) { return; }
     testLoading.value = true;
     try {
-      // console.log("[authStore] fetchTestResult: Sending API request...");
       const res = await axios.get<{ hasResult: boolean; result?: TestResult }>(`${TEST_API_URL}/result`, authHeader.value);
-      // console.log("[authStore] API /result response received:", res.data);
       if (res.data.hasResult && res.data.result && typeof res.data.result.h_score === 'number') {
         const receivedResult = res.data.result;
-        // console.log("[authStore] Fetched testResult successfully (structure check):", receivedResult);
         testResult.value = receivedResult;
-        // console.log("[authStore] Saving to localStorage:", JSON.stringify(receivedResult));
         localStorage.setItem('testResult', JSON.stringify(receivedResult));
-        await fetchTestStats(); // 使用 await 确保 stats 获取完成? (可选)
+        await fetchTestStats(); 
       } else {
-        // console.log("[authStore] No existing or incomplete test result found for user.");
         testResult.value = null;
         localStorage.removeItem('testResult');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[authStore] Error during fetchTestResult API call:', error);
       if (axios.isAxiosError(error) && error.response?.status === 401) { console.error("  -> Unauthorized (401). Token might be invalid or expired."); }
       else if (axios.isAxiosError(error)) { console.error("  -> Axios error:", error.message, error.response?.data); }
       else { console.error("  -> Non-Axios error:", error); }
     } finally {
       testLoading.value = false;
-      // console.log("[authStore] Finished fetchTestResult.");
     }
   }
 
@@ -214,14 +209,11 @@ export const useAuthStore = defineStore('auth', () => {
     testLoading.value = true;
     try {
       const res = await axios.post<{ result: TestResult }>(`${TEST_API_URL}/submit`, { answers }, authHeader.value);
-      // console.log("[authStore] API /submit response:", res.data);
       if (res.data.result && typeof res.data.result.h_score === 'number') {
         const receivedResult = res.data.result;
-        // console.log("[authStore] Submitted testResult (structure check):", receivedResult);
         testResult.value = receivedResult;
-        // console.log("[authStore] Saving to localStorage:", JSON.stringify(receivedResult));
         localStorage.setItem('testResult', JSON.stringify(receivedResult));
-        await fetchTestStats(); // 使用 await
+        await fetchTestStats();
         return true;
       } else { console.error("[authStore] Submit response missing result object or scores"); return false; }
     } catch (error: any) { console.error('提交测试失败:', error.response?.data?.message || error.message); return false; }
@@ -246,10 +238,8 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchTestStats(): Promise<void> {
      try {
        const res = await axios.get<{ stats: TestStats; total: number }>(`${TEST_API_URL}/stats`);
-       // console.log("[authStore] API /stats response:", res.data);
        testStats.value = res.data.stats;
        testStatsTotal.value = res.data.total;
-       // console.log("[authStore] Fetched stats:", testStats.value, "Total:", testStatsTotal.value);
      } catch (error) {
        console.error('获取测试统计失败:', error);
        testStats.value = null;
@@ -264,10 +254,8 @@ export const useAuthStore = defineStore('auth', () => {
       }
       activitiesLoading.value = true;
       try {
-          console.log("[authStore] Fetching recent activities...");
           const res = await axios.get<Activity[]>(`${USER_API_URL}/activities`, authHeader.value);
           recentActivities.value = res.data;
-          console.log("[authStore] Fetched activities:", recentActivities.value);
       } catch (error) {
           console.error("获取活动记录失败:", error);
           recentActivities.value = [];
@@ -276,46 +264,32 @@ export const useAuthStore = defineStore('auth', () => {
       }
   }
 
-  // --- (!!! 新增 Action !!!) ---
-  /**
-   * 获取指定月份的签到记录
-   * @param year 年份 (e.g., 2025)
-   * @param month 月份 (1-12)
-   */
   async function fetchMonthlyCheckIns(year: number, month: number): Promise<void> {
       if (!isLoggedIn.value) {
           monthlyCheckIns.value = [];
           return;
       }
       checkInsLoading.value = true;
-      console.log(`[authStore] Fetching check-ins for ${year}-${month}...`); // 日志
       try {
           const res = await axios.get<string[]>(`${USER_API_URL}/checkins/${year}/${month}`, authHeader.value);
-          monthlyCheckIns.value = res.data; // 存储 ["YYYY-MM-DD", ...]
-          console.log(`[authStore] Fetched ${monthlyCheckIns.value.length} check-in dates for ${year}-${month}:`, monthlyCheckIns.value); // 日志
+          monthlyCheckIns.value = res.data;
       } catch (error) {
           console.error(`获取 ${year}-${month} 签到记录失败:`, error);
-          monthlyCheckIns.value = []; // 出错时清空
+          monthlyCheckIns.value = [];
       } finally {
           checkInsLoading.value = false;
       }
   }
 
-
   // --- 4. 返回所有 ---
   return {
-    // 状态
     user, token, dailyQuiz, quizLoading, testQuestions, testResult, testLoading, testStats, testStatsTotal,
     recentActivities, activitiesLoading,
-    monthlyCheckIns, checkInsLoading, // <-- 新增
-
-    // Getters
+    monthlyCheckIns, checkInsLoading,
     isLoggedIn, authHeader,
-
-    // Actions
     register, login, logout, checkIn, fetchDailyQuiz, submitQuiz,
     fetchTestQuestions, fetchTestResult, submitTest, resetTestResult, fetchTestStats,
     fetchRecentActivities,
-    fetchMonthlyCheckIns // <-- 新增
+    fetchMonthlyCheckIns
   }
 })
