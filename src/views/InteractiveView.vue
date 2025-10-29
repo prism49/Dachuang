@@ -7,7 +7,7 @@ import type { DailyQuizResponse } from '../stores/authStore' // 导入类型
 
 // --- 1. 状态管理 ---
 const authStore = useAuthStore()
-const { user, dailyQuiz, quizLoading, isLoggedIn, monthlyCheckIns, checkInsLoading } = storeToRefs(authStore)
+const { dailyQuiz, quizLoading, isLoggedIn, monthlyCheckIns, checkInsLoading } = storeToRefs(authStore)
 const message = ref<string | null>(null)
 const isLoading = ref(false)
 const selectedOptionIndex = ref<number | null>(null)

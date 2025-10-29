@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '../stores/authStore'
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue' // (!!! 引入 watch !!!)
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { RouterLink } from 'vue-router'
@@ -11,14 +11,16 @@ const router = useRouter()
 
 // --- 头像选择逻辑 ---
 const availableAvatars = computed(() => [
-  // 确保这些图片在你的 src/assets/images/avatars/ 目录下存在
+  // (!!! 警告: 确保这 3 个文件存在于 src/assets/images/avatars/ 目录下 !!!)
+  // 如果文件不存在, `npm run build` 仍会失败!
   new URL('../assets/images/avatars/avatar1.png', import.meta.url).href,
   new URL('../assets/images/avatars/avatar2.png', import.meta.url).href,
   new URL('../assets/images/avatars/avatar3.png', import.meta.url).href,
-  'https://placehold.co/100x100/bdc3c7/ffffff?text=默认' // 默认占位符
+  'https://placehold.co/100x100/bdc3c7/ffffff?text=默认'
 ]);
 const showAvatarSelector = ref(false);
 
+// (!!! 修复 TS 错误 !!!)
 const selectedAvatar = ref<string>(availableAvatars.value[availableAvatars.value.length - 1]); // 默认值
 const localStorageKey = ref<string>('userAvatar_default'); // 默认键
 
@@ -27,6 +29,7 @@ watch(
   () => user.value?.id, // 监视用户ID
   (newId) => {
     if (newId) {
+      // (!!! 修复 TS 错误 !!!)
       localStorageKey.value = `userAvatar_${newId}`;
       const savedAvatar = localStorage.getItem(localStorageKey.value);
       if (savedAvatar && availableAvatars.value.includes(savedAvatar)) {
@@ -36,7 +39,7 @@ watch(
       }
     }
   },
-  { immediate: true } // 立即执行一次
+  { immediate: true } // 立即执行一次, 以便在加载时设置头像
 );
 
 function saveAvatar() {
@@ -52,6 +55,8 @@ onMounted(async () => {
         router.push('/');
         return;
     }
+    // (!!! 修复 TS 错误 !!!)
+    // 确保 user.value 存在后再获取活动
     if(user.value) {
         await Promise.all([
             authStore.fetchTestResult(),
@@ -60,7 +65,10 @@ onMounted(async () => {
     }
 });
 
+// (!!! 修复 TS 错误 !!!)
 const formattedLastCheckIn = computed(() => {
+  // user.value?.lastCheckIn 已经是 string | null | undefined
+  // if 检查确保了它的安全
   if (user.value?.lastCheckIn) {
     try {
       const [year, month, day] = user.value.lastCheckIn.split('-').map(Number);
@@ -74,8 +82,9 @@ const formattedLastCheckIn = computed(() => {
   return '从未签到过';
 });
 
+// (!!! 修复 TS 错误 !!!)
 const cultureTestResultTitle = computed(() => {
-  return testResult.value?.title ?? '尚未测试';
+  return testResult.value?.title ?? '尚未测试'; // 使用 ?? 提供默认值
 });
 
 </script>
@@ -84,7 +93,6 @@ const cultureTestResultTitle = computed(() => {
   <div class="page-container profile-view">
     <div v-if="user" class="profile-card-wrapper">
       <div class="profile-card">
-
         <header class="profile-header">
           <div class="avatar-container">
             <img :src="selectedAvatar" alt="用户头像" class="current-avatar" @click="showAvatarSelector = !showAvatarSelector" title="点击更换头像">
@@ -164,14 +172,11 @@ const cultureTestResultTitle = computed(() => {
 </template>
 
 <style scoped>
-/* --- 页面基础 --- */
+/* (所有样式保持不变) */
 .profile-view { max-width: 900px; margin: 40px auto; }
 .profile-card-wrapper { /*...*/ }
 .profile-card { background-color: #fdfbf5; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 5px 15px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #eeebe2; }
-
-/* --- 页眉 --- */
 .profile-header { padding: 30px 40px; border-bottom: 1px solid #e0dccc; text-align: center; position: relative; }
-/* 头像 */
 .avatar-container { position: absolute; top: 20px; left: 30px; }
 .current-avatar { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s ease; object-fit: cover; background-color: #eee; }
 .current-avatar:hover { transform: scale(1.1); }
@@ -186,12 +191,8 @@ const cultureTestResultTitle = computed(() => {
 .save-avatar-btn, .cancel-avatar-btn { padding: 5px 10px; font-size: 0.9em; border-radius: 5px; cursor: pointer; margin-right: 10px; border: 1px solid; }
 .save-avatar-btn { background-color: #007bff; color: white; border-color: #007bff;}
 .cancel-avatar-btn { background-color: #eee; color: #333; border-color: #ccc;}
-
-/* 用户名和问候语 */
 .username { font-family: 'Times New Roman', 'KaiTi', serif; font-size: 2.8em; font-weight: 500; color: #3a3f58; margin: 0; line-height: 1.2; }
 .greeting { font-size: 1.1em; color: #8a8d9a; margin-top: 5px; }
-
-/* 内容区 */
 .profile-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0px; }
 .profile-section { padding: 30px 40px; }
 .stats-section { border-right: 1px solid #e0dccc; }
@@ -206,21 +207,8 @@ const cultureTestResultTitle = computed(() => {
 .arrow { display: inline-block; margin-left: 5px; transition: transform 0.3s ease; }
 .stat-value a:hover .arrow { transform: translateX(3px); }
 .stat-value.pending a { color: #8a8d9a; }
-
-/* 最近活动 */
 .recent-activity-section h3 { margin-top: 0; font-size: 1.4em; font-weight: 600; color: #34495e; margin-bottom: 15px; }
-.activity-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  max-height: 400px;
-  overflow-y: auto;
-  /* 滚动条样式 */
-  &::-webkit-scrollbar { width: 6px; }
-  &::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
-  &::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-  &::-webkit-scrollbar-thumb:hover { background: #aaa; }
-}
+.activity-list { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; &::-webkit-scrollbar { width: 6px; } &::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; } &::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; } &::-webkit-scrollbar-thumb:hover { background: #aaa; }}
 .activity-item { display: flex; align-items: center; padding: 12px 5px; border-bottom: 1px solid #f0f0f0; font-size: 0.95em; }
 .activity-item:last-child { border-bottom: none; }
 .activity-type { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-right: 15px; font-weight: bold; color: white; flex-shrink: 0; }
@@ -231,27 +219,11 @@ const cultureTestResultTitle = computed(() => {
 .activity-details .incorrect { color: #e74c3c; margin-left: 5px; font-weight: 500;}
 .activity-points { font-weight: 600; color: #e67e22; white-space: nowrap; margin-left: 10px; }
 .no-activity, .loading-placeholder { color: #999; text-align: center; padding: 20px 0; font-style: italic; }
-
-/* 页脚 */
 .profile-footer { padding: 20px 40px; text-align: right; background-color: #f8f5ed; border-top: 1px solid #e0dccc; }
 .logout-button { padding: 8px 20px; font-size: 0.95em; font-weight: 500; color: #8a8d9a; background-color: transparent; border: 1px solid #d0d5dd; border-radius: 6px; cursor: pointer; transition: all 0.3s ease; }
 .logout-button:hover { background-color: #e8eaee; color: #3a3f58; border-color: #b0b5c1; }
-
-/* 未登录 */
 .login-prompt { text-align: center; margin-top: 50px; }
-
-/* 响应式 */
-@media (max-width: 768px) {
-  .profile-body { grid-template-columns: 1fr; }
-  .stats-section { border-right: none; border-bottom: 1px solid #e0dccc; }
-  .profile-header, .profile-section, .profile-footer { padding: 20px 25px; }
-  .username { font-size: 2.2em; }
-  .stat-value.points { font-size: 1.8em; }
-  .avatar-container { position: static; margin-bottom: 15px; display: flex; justify-content: center; }
-  .avatar-selector { left: 50%; transform: translateX(-50%); top: 110px; }
-}
-
-/* 淡入淡出 */
+@media (max-width: 768px) { .profile-body { grid-template-columns: 1fr; } .stats-section { border-right: none; border-bottom: 1px solid #e0dccc; } .profile-header, .profile-section, .profile-footer { padding: 20px 25px; } .username { font-size: 2.2em; } .stat-value.points { font-size: 1.8em; } .avatar-container { position: static; margin-bottom: 15px; display: flex; justify-content: center; } .avatar-selector { left: 50%; transform: translateX(-50%); top: 110px; } }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
