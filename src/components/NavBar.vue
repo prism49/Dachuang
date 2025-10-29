@@ -23,7 +23,7 @@ const navLinks = [
   <header class="navbar">
     <div class="container">
       <div class="logo">
-        <RouterLink to="/">文心雕龙</RouterLink>
+        <RouterLink to="/">中西古典学—从《会饮篇》和《论语》出发</RouterLink>
       </div>
       
       <!-- 左侧的基础导航 -->
