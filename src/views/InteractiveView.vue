@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { storeToRefs } from 'pinia'
 import { RouterLink } from 'vue-router'
-import type { DailyQuizResponse } from '../stores/authStore' // 导入类型
+import type { DailyQuizResponse } from '../stores/authStore'
 
 // --- 1. 状态管理 ---
 const authStore = useAuthStore()
@@ -22,10 +22,13 @@ const currentMonth = ref(today.getMonth()) // 0 = 一月
 const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"]
 const weekDayNames = ["日", "一", "二", "三", "四", "五", "六"]
 
+// (!!! 修复 TS 错误 !!!)
 function getLocalDateString(date: Date = new Date()): string {
   const offset = date.getTimezoneOffset() * 60000;
   const localDate = new Date(date.getTime() - offset);
-  return localDate.toISOString().split('T')[0];
+  const parts = localDate.toISOString().split('T');
+  // (!!! 关键修复: 确保返回的 100% 是字符串 !!!)
+  return parts[0] ?? ''; // 使用 ?? '' 来处理 parts[0] 可能是 undefined 的理论情况
 }
 const todayString = getLocalDateString(today);
 
