@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '../stores/authStore'
-import { computed, ref, onMounted, watch } from 'vue' // (!!! 引入 watch !!!)
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { RouterLink } from 'vue-router'
@@ -10,179 +10,173 @@ const { user, testResult, activitiesLoading, recentActivities } = storeToRefs(au
 const router = useRouter()
 
 // --- 头像选择逻辑 ---
-// (!!! 修复：定义一个常量
 const defaultAvatar = 'https://placehold.co/100x100/bdc3c7/ffffff?text=默认';
 
 const availableAvatars = computed(() => [
-  // (!!! 警告: 确保这 3 个文件存在于 src/assets/images/avatars/ 目录下 !!!)
-  // 如果文件不存在, `npm run build` 仍会失败!
-  // 为了安全构建, 你可以先把下面 3 行注释掉
-  new URL('../assets/images/avatars/avatar1.png', import.meta.url).href,
-  new URL('../assets/images/avatars/avatar2.png', import.meta.url).href,
-  new URL('../assets/images/avatars/avatar3.png', import.meta.url).href,
-  defaultAvatar
+  // (!!! 警告: 确保这 3 个文件存在于 src/assets/images/avatars/ 目录下 !!!)
+  // 为了安全构建, 如果文件不存在，Vite 会在 build 时报错
+   new URL('../assets/images/avatars/avatar1.png', import.meta.url).href,
+   new URL('../assets/images/avatars/avatar2.png', import.meta.url).href,
+   new URL('../assets/images/avatars/avatar3.png', import.meta.url).href,
+  defaultAvatar
 ]);
 const showAvatarSelector = ref(false);
 
-// (!!! 修复 TS 错误 !!!)
 const selectedAvatar = ref<string>(defaultAvatar); // 默认值
 const localStorageKey = ref<string>('userAvatar_default'); // 默认键
 
 // 监视 user.id 的变化
 watch(
-  () => user.value?.id, // 监视用户ID
-  (newId) => {
-    if (newId) {
-      localStorageKey.value = `userAvatar_${newId}`;
-      const savedAvatar = localStorage.getItem(localStorageKey.value);
-      // (!!! 修复 TS 错误: 确保 savedAvatar 不是 null 且有效!!!)
-      if (savedAvatar && availableAvatars.value.includes(savedAvatar)) {
-        selectedAvatar.value = savedAvatar;
-      } else {
-        selectedAvatar.value = defaultAvatar; // 使用常量默认值
-      }
-    } else {
-      selectedAvatar.value = defaultAvatar; // 用户登出或 ID 无效时重置
-    }
-  },
-  { immediate: true } // 立即执行一次
+  () => user.value?.id, // 监视用户ID
+  (newId) => {
+    if (newId) {
+      localStorageKey.value = `userAvatar_${newId}`;
+      const savedAvatar = localStorage.getItem(localStorageKey.value);
+      // (!!! 修复 TS 错误: 确保 savedAvatar 不是 null 且有效!!!)
+      if (savedAvatar && availableAvatars.value.includes(savedAvatar)) {
+        selectedAvatar.value = savedAvatar;
+      } else {
+        selectedAvatar.value = defaultAvatar; // 使用常量默认值
+      }
+    } else {
+      selectedAvatar.value = defaultAvatar; // 用户登出或 ID 无效时重置
+    }
+  },
+  { immediate: true } // 立即执行一次
 );
 
 function saveAvatar() {
-  if (!user.value?.id) return;
-  localStorage.setItem(localStorageKey.value, selectedAvatar.value);
-  showAvatarSelector.value = false;
+  if (!user.value?.id) return;
+  localStorage.setItem(localStorageKey.value, selectedAvatar.value);
+  showAvatarSelector.value = false;
 }
 // --- 头像逻辑结束 ---
 
 
 onMounted(async () => {
-    if (!authStore.isLoggedIn) {
-        router.push('/');
-        return;
-    }
-    // (!!! 修复 TS 错误 !!!)
-    // 确保 user.value 存在后再获取活动
-    if(user.value) {
-        await Promise.all([
-            authStore.fetchTestResult(),
-            authStore.fetchRecentActivities()
-        ]);
-    }
+    if (!authStore.isLoggedIn) {
+        router.push('/');
+        return;
+    }
+    // (!!! 修复 TS 错误 !!!)
+    // 确保 user.value 存在后再获取活动
+    if(user.value) {
+        await Promise.all([
+            authStore.fetchTestResult(),
+            authStore.fetchRecentActivities()
+        ]);
+    }
 });
 
 // (!!! 修复 TS 错误 !!!)
 const formattedLastCheckIn = computed(() => {
-  if (user.value?.lastCheckIn) {
-    try {
-      const parts = user.value.lastCheckIn.split('-').map(Number);
-      const [year, month, day] = parts;
-
-      // (!!! 关键修复: 添加对 undefined 的显式检查 !!!)
-      if (parts.length === 3 &&
+  if (user.value?.lastCheckIn) {
+    try {
+      const parts = user.value.lastCheckIn.split('-').map(Number);
+      const [year, month, day] = parts;
+      // (!!! 关键修复: 检查 year, month, day 是否都是有效数字 !!!)
+      if (parts.length === 3 &&
           year !== undefined && month !== undefined && day !== undefined && // <-- 添加此行
           !isNaN(year) && !isNaN(month) && !isNaN(day))
       {
         // 经过检查, TS 此时知道 year, month, day 都是 'number' 类型
-        const date = new Date(year, month - 1, day); // month - 1 是安全的
-        return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
-      }
-      return '日期格式无效';
-    } catch (e) {
-      console.error("Error formatting date:", e);
-      return '日期无效';
-    }
-  }
-  return '从未签到过';
+        const date = new Date(year, month - 1, day); // month - 1 是安全的
+        return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+      }
+      return '日期格式无效';
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return '日期无效';
+    }
+  }
+  return '从未签到过';
 });
 
 // (!!! 修复 TS 错误 !!!)
 const cultureTestResultTitle = computed(() => {
-  return testResult.value?.title ?? '尚未测试'; // 使用 ?? 提供默认值
+  return testResult.value?.title ?? '尚未测试'; // 使用 ?? 提供默认值
 });
 
 </script>
 
 <template>
-  <div class="page-container profile-view">
-    <div v-if="user" class="profile-card-wrapper">
-      <div class="profile-card">
-        <header class="profile-header">
-          <div class="avatar-container">
-            <img :src="selectedAvatar" alt="用户头像" class="current-avatar" @click="showAvatarSelector = !showAvatarSelector" title="点击更换头像">
-            <transition name="fade">
-              <div v-if="showAvatarSelector" class="avatar-selector">
-                 <h4>选择你的头像</h4>
-                 <div class="avatar-options">
-                    <label v-for="avatarUrl in availableAvatars" :key="avatarUrl" class="avatar-option">
-                       <input type="radio" v-model="selectedAvatar" :value="avatarUrl" name="avatar">
-                       <img :src="avatarUrl" alt="头像选项" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#eee';">
-                    </label>
-                 </div>
-                 <button @click="saveAvatar" class="save-avatar-btn">确定</button>
-                 <button @click="showAvatarSelector = false" class="cancel-avatar-btn">取消</button>
-              </div>
-            </transition>
-          </div>
-          <h2 class="username">{{ user.username }}</h2>
-          <p class="greeting">欢迎回来</p>
-        </header>
+  <div class="page-container profile-view">
+    <div v-if="user" class="profile-card-wrapper">
+      <div class="profile-card">
 
-        <div class="profile-body">
-          <section class="profile-section stats-section">
-            <div class="stat-item">
-              <span class="stat-label">当前积分</span>
-              <span class="stat-value points">{{ user.points }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">上次签到</span>
-              <span class="stat-value date">{{ formattedLastCheckIn }}</span>
-            </div>
-            <div class="stat-item">
-          _ <span class="stat-label">文化属性</span>
-              <RouterLink v-if="testResult" to="/culture-test" class="stat-value result-link">
-                 {{ cultureTestResultTitle }} <span class="arrow">→</span>
-              </RouterLink>
-              <span v-else class="stat-value pending">
-                <RouterLink to="/culture-test">前往测试 <span class="arrow">→</span></RouterLink>
-              </span>
-            </div>
-          </section>
+        <header class="profile-header">
+          <div class="avatar-container">
+            <img :src="selectedAvatar" alt="用户头像" class="current-avatar" @click="showAvatarSelector = !showAvatarSelector" title="点击更换头像">
+            <transition name="fade">
+              <div v-if="showAvatarSelector" class="avatar-selector">
+                 <h4>选择你的头像</h4>
+                 <div class="avatar-options">
+                    <label v-for="avatarUrl in availableAvatars" :key="avatarUrl" class="avatar-option">
+                       <input type="radio" v-model="selectedAvatar" :value="avatarUrl" name="avatar">
+                       <img :src="avatarUrl" alt="头像选项" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#eee';">
+                    </label>
+                 </div>
+                 <button @click="saveAvatar" class="save-avatar-btn">确定</button>
+                 <button @click="showAvatarSelector = false" class="cancel-avatar-btn">取消</button>
+              </div>
+            </transition>
+          </div>
+          <h2 class="username">{{ user.username }}</h2>
+          <p class="greeting">欢迎回来</p>
+        </header>
 
-          <section class="profile-section recent-activity-section">
-             <h3>最近活动记录</h3>
-             <div v-if="activitiesLoading" class="loading-placeholder">
-                <p>正在加载活动记录...</p>
-             </div>
-             <ul v-else-if="recentActivities && recentActivities.length > 0" class="activity-list">
-                <li v-for="activity in recentActivities" :key="activity.id" class="activity-item">
-                    <span class="activity-type" :class="activity.type === '签到' ? 'checkin' : 'quiz'">
-                        {{ activity.type === '签到' ? '✓' : '?' }}
-                    </span>
-                    <span class="activity-details">
-                        {{ activity.type }} ({{ activity.date }})
-        _              <span v-if="activity.type === '答题'" :class="activity.correct ? 'correct' : 'incorrect'">
-                          {{ activity.correct ? '答对' : '答错' }}
-                        </span>
-                    </span>
-                    <span class="activity-points">{{ activity.points }} 分</span>
-                </li>
-             </ul>
-             <p v-else class="no-activity">暂无活动记录</p>
-          </section>
+        <div class="profile-body">
+          <section class="profile-section stats-section">
+            <div class="stat-item">
+              <span class="stat-label">当前积分</span>
+              <span class="stat-value points">{{ user.points }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">上次签到</span>
+              <span class="stat-value date">{{ formattedLastCheckIn }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">文化属性</span>
+              <RouterLink v-if="testResult" to="/culture-test" class="stat-value result-link">
+                 {{ cultureTestResultTitle }} <span class="arrow">→</span>
+              </RouterLink>
+              <span v-else class="stat-value pending">
+                <RouterLink to="/culture-test">前往测试 <span class="arrow">→</span></RouterLink>
+              </span>
+            </div>
+          </section>
 
-        </div>
+          <section class="profile-section recent-activity-section">
+             <h3>最近活动记录</h3>
+             <div v-if="activitiesLoading" class="loading-placeholder">
+                <p>正在加载活动记录...</p>
+             </div>
+             <ul v-else-if="recentActivities && recentActivities.length > 0" class="activity-list">
+                <li v-for="activity in recentActivities" :key="activity.id" class="activity-item">
+                    <span class="activity-type" :class="activity.type === '签到' ? 'checkin' : 'quiz'">
+                        {{ activity.type === '签到' ? '✓' : '?' }}
+                    </span>
+                    <span class="activity-details">
+                        {{ activity.type }} ({{ activity.date }})
+                        <span v-if="activity.type === '答题'" :class="activity.correct ? 'correct' : 'incorrect'">
+                          {{ activity.correct ? '答对' : '答错' }}
+                        </span>
+                    </span>
+                    <span class="activity-points">{{ activity.points }} 分</span>
+                </li>
+             </ul>
+             <p v-else class="no-activity">暂无活动记录</p>
+          </section>
+        </div>
 
-        <footer class="profile-footer">
-           <button @click="authStore.logout" class="logout-button">退出登录</button>
-        </footer>
+        <footer class="profile-footer">
+           <button @click="authStore.logout" class="logout-button">退出登录</button>
+        </footer>
 
-      </div>
-    </div>
-    <div v-else class="login-prompt">
-      <p>请先 <RouterLink to="/login">登录</RouterLink> 查看个人主页。</p>
-    </div>
-  </div>
+      </div> </div> <div v-else class="login-prompt">
+      <p>请先 <RouterLink to="/login">登录</RouterLink> 查看个人主页。</p>
+    </div>
+  </div>
 </template>
 
 <style scoped>
