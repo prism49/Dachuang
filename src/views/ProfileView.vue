@@ -15,6 +15,7 @@ const defaultAvatar = 'https://placehold.co/100x100/bdc3c7/ffffff?text=默认';
 const availableAvatars = computed(() => [
   // (!!! 警告: 确保这 3 个文件存在于 src/assets/images/avatars/ 目录下 !!!)
   // 为了安全构建, 如果文件不存在，Vite 会在 build 时报错
+  // 暂时注释掉，只用占位符，直到你确认图片已添加并推送
    new URL('../assets/images/avatars/avatar1.png', import.meta.url).href,
    new URL('../assets/images/avatars/avatar2.png', import.meta.url).href,
    new URL('../assets/images/avatars/avatar3.png', import.meta.url).href,
